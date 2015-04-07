@@ -1,0 +1,778 @@
+'Excel Macro to normalize mobile numbers
+'v0.1.130912
+
+Sub Pick1KuwaitNumbers()
+'
+' FormatCopyKuwaitNumbers Macro
+'
+YesNo = MsgBox("This macro will verify the selected cells for Kuwait mobile numbers. The 3rd right column values will be replaced with the normalized numbers and empty cells for the unknowns. Do you want to continue?", vbYesNo + vbCritical, "Caution")
+Select Case YesNo
+Case vbYes 'Run Macro
+    'MsgBox "Rows = " & Selection.Rows.Count & vbCrLf & "Colums = " & Selection.Columns.Count
+    validCount = 0
+    invalidCount = 0
+    
+    firstRow = Selection.Row
+    lastRow = Selection.Row + Selection.Rows.Count
+    For rownumber = firstRow To lastRow - 1
+        myCellVal = Trim(Cells(rownumber, Selection.Column))
+        myCellVal = Replace(myCellVal, " ", "")
+        
+        'Select between the below two lines to copy or not to copy unrecognised numbers
+        'myCopyVal = myCellVal
+        myCopyVal = ""
+        
+        'Below Ifs remove additional country codes
+        If myCellVal Like "+965+965*" Or myCellVal Like "+96500965*" Or (myCellVal Like "+965965*" And Len(myCellVal) = 15) Then
+            myCellVal = Right(myCellVal, Len(myCellVal) - 4)
+        'Possible minor bug in future if 96500965 becomes valid mobile number
+        ElseIf myCellVal Like "965+965*" Or myCellVal Like "96500965*" Or (myCellVal Like "965965*" And Len(myCellVal) = 14) Then
+            myCellVal = Right(myCellVal, Len(myCellVal) - 3)
+        End If
+    
+        'Below If reduces cases to + and non + starting numbers, eliminating 00 start
+        If myCellVal Like "00*" Then
+            myCellVal = "+" & Right(myCellVal, Len(myCellVal) - 2)
+        End If
+        
+        'Very simplistic implementation to pickup the biggest split on - and /
+        Dim numberArray() As String
+        If (myCellVal Like "*-*") Then
+            numberArray = Split(myCellVal, "-")
+            If Len(numberArray(0)) > Len(numberArray(1)) Then
+                myCellVal = numberArray(0)
+            Else
+                myCellVal = numberArray(1)
+            End If
+        ElseIf (myCellVal Like "*/*") Then
+            numberArray = Split(myCellVal, "/")
+            If Len(numberArray(0)) > Len(numberArray(1)) Then
+                myCellVal = numberArray(0)
+            Else
+                myCellVal = numberArray(1)
+            End If
+        End If
+        
+        'Checking the expected format of the number
+        If myCellVal Like "+965*" Then
+            If (Len(myCellVal) = 12) Then
+                If (myCellVal Like "+9659*") Or (myCellVal Like "+9656*") Or (myCellVal Like "+9655*") Then
+                    myCopyVal = myCellVal
+                Else
+                    myCopyVal = "Invalid-Kuwait-Number"
+                End If
+            'Specific to old mobile numbers
+            ElseIf Len(myCellVal) = 11 Then
+                If myCellVal Like "+9659*" Or myCellVal Like "+9657*" Then
+                    myCopyVal = "+9659" & Right(myCellVal, 7)
+                ElseIf myCellVal Like "+9656*" Then
+                    myCopyVal = "+9656" & Right(myCellVal, 7)
+                Else
+                    myCopyVal = "Invalid-Kuwait-OldNumber"
+                End If
+            'This case considers the presence of + thus taking granted the number to be in E164 format
+            ElseIf Len(myCellVal) > 12 Or Len(myCellVal) < 11 Then
+                myCopyVal = "Invalid-Kuwait-Length"
+            End If
+        ElseIf Left(myCellVal, 1) <> "+" Then
+            If (Len(myCellVal) = 11) Then
+                If (myCellVal Like "9659*") Or (myCellVal Like "9656*") Or (myCellVal Like "9655*") Then
+                    myCopyVal = "+" & myCellVal
+                Else
+                    myCopyVal = "Invalid-Kuwait-Number"
+                End If
+            ElseIf Len(myCellVal) = 10 Then
+                If myCellVal Like "9659*" Or myCellVal Like "9657*" Then
+                    myCopyVal = "+9659" & Right(myCellVal, 7)
+                ElseIf myCellVal Like "9656*" Then
+                    myCopyVal = "+9656" & Right(myCellVal, 7)
+                Else
+                    myCopyVal = "Invalid-Kuwait-Number"
+                End If
+            ElseIf (Len(myCellVal) = 8) Then
+                If (myCellVal Like "9*") Or (myCellVal Like "6*") Or (myCellVal Like "5*") Then
+                    myCopyVal = "+965" & myCellVal
+                Else
+                    myCopyVal = "Invalid-Kuwait-Number"
+                End If
+            ElseIf Len(myCellVal) = 7 Then
+                If myCellVal Like "9*" Or myCellVal Like "7*" Then
+                    myCopyVal = "+9659" & myCellVal
+                ElseIf myCellVal Like "6*" Then
+                    myCopyVal = "+9656" & myCellVal
+                Else
+                    myCopyVal = "Invalid-Kuwait-Number"
+                End If
+            ElseIf Len(myCellVal) < 7 Then
+                myCopyVal = "Invalid-Kuwait-Length"
+            End If
+        End If
+        
+        Cells(rownumber, Selection.Column + 3).NumberFormat = "@"
+        Cells(rownumber, Selection.Column + 3).Value = myCopyVal
+        
+        If myCopyVal Like "+*" Then
+            validCount = validCount + 1
+        ElseIf myCopyVal Like "Invalid*" Then
+            invalidCount = invalidCount + 1
+        End If
+    Next rownumber
+    
+    MsgBox "Total = " & Selection.Rows.Count & vbCrLf & "Valid = " & validCount & vbCrLf & "Invalid = " & invalidCount
+Case vbNo
+'Insert your "No" code here.
+End Select
+End Sub
+Sub PickUAENumbers()
+'
+' PickUAENumbers Macro
+' +971501234567
+
+'
+YesNo = MsgBox("This macro will verify the selected cells for UAE mobile numbers. The normalized numbers will be copied in the 3rd right column.. Do you want to continue?", vbYesNo + vbCritical, "Caution")
+Select Case YesNo
+Case vbYes 'Run Macro
+    'MsgBox "Rows = " & Selection.Rows.Count & vbCrLf & "Colums = " & Selection.Columns.Count
+    firstRow = Selection.Row
+    lastRow = Selection.Row + Selection.Rows.Count
+    For rownumber = firstRow To lastRow - 1
+        myCellVal = Trim(Cells(rownumber, Selection.Column))
+        myCellVal = Replace(myCellVal, " ", "")
+        
+        'Select between the below two lines to copy or not to copy unrecognised numbers
+        'myCopyVal = myCellVal
+        myCopyVal = ""
+        
+        'Checking the expected format of the number
+        If myCellVal Like "+971*" Then
+            myCellVal = Replace(myCellVal, "-", "")
+            'Below Ifs remove additional country codes
+            If myCellVal Like "+971+971*" Or myCellVal Like "+97100971*" Or (myCellVal Like "+971971*" And Len(myCellVal) = 16) Then
+            myCellVal = Replace(myCellVal, "+97100971", "+971+971")
+            myCellVal = Replace(myCellVal, "+971971", "+971+971")
+            myCellVal = Right(myCellVal, Len(myCellVal) - 4)
+            End If
+            
+            If myCellVal Like "+97105*" Then
+                myCellVal = Replace(myCellVal, "+97105", "+9715")
+            End If
+            
+            If (Len(myCellVal) = 13) Then
+                If (myCellVal Like "+97150*") Or (myCellVal Like "+97152*") Or (myCellVal Like "+97155*") Or (myCellVal Like "+97156*") Then
+                    myCopyVal = myCellVal
+                Else
+                    myCopyVal = "Invalid-UAE-Number"
+                End If
+            'This case considers the presence of + thus taking granted the number to be in E164 format
+            ElseIf Len(myCellVal) <> 13 Then
+                myCopyVal = "Invalid-UAE-Length"
+            End If
+            Cells(rownumber, Selection.Column + 3).NumberFormat = "@"
+            Cells(rownumber, Selection.Column + 3).Value = myCopyVal
+        End If
+        
+        If myCopyVal Like "+*" Then
+            validCount = validCount + 1
+        ElseIf myCopyVal Like "Invalid*" Then
+            invalidCount = invalidCount + 1
+        End If
+    Next rownumber
+    
+    MsgBox "Total = " & Selection.Rows.Count & vbCrLf & "Valid = " & validCount & vbCrLf & "Invalid = " & invalidCount
+
+
+Case vbNo
+'Insert your "No" code here.
+End Select
+End Sub
+Sub PickSaudiArabiaNumbers()
+'
+' PickSaudiArabiaNumbers Macro
+' +966501234567
+
+YesNo = MsgBox("This macro will verify the selected cells for Saudi Arabia mobile numbers. The normalized numbers will be copied in the 3rd right column.. Do you want to continue?", vbYesNo + vbCritical, "Caution")
+Select Case YesNo
+Case vbYes 'Run Macro
+    'MsgBox "Rows = " & Selection.Rows.Count & vbCrLf & "Colums = " & Selection.Columns.Count
+    firstRow = Selection.Row
+    lastRow = Selection.Row + Selection.Rows.Count
+    For rownumber = firstRow To lastRow - 1
+        myCellVal = Trim(Cells(rownumber, Selection.Column))
+        myCellVal = Replace(myCellVal, " ", "")
+        
+        'Select between the below two lines to copy or not to copy unrecognised numbers
+        'myCopyVal = myCellVal
+        myCopyVal = ""
+        
+        'Checking the expected format of the number
+        If myCellVal Like "+966*" Then
+            myCellVal = Replace(myCellVal, "-", "")
+            'Below Ifs remove additional country codes
+            If myCellVal Like "+966+966*" Or myCellVal Like "+96600966*" Or (myCellVal Like "+966966*" And Len(myCellVal) = 16) Then
+            myCellVal = Replace(myCellVal, "+96600966", "+966+966")
+            myCellVal = Replace(myCellVal, "+966966", "+966+966")
+            myCellVal = Right(myCellVal, Len(myCellVal) - 4)
+            End If
+            
+            If myCellVal Like "+96605*" Then
+                myCellVal = Replace(myCellVal, "+96605", "+9665")
+            End If
+            
+            If (Len(myCellVal) = 13) Then
+                If (myCellVal Like "+9665*") And Not ((myCellVal Like "+96651*") Or (myCellVal Like "+96652*")) Then ' Notice And Not here
+                    myCopyVal = myCellVal
+                Else
+                    myCopyVal = "Invalid-SaudiArabia-Number"
+                End If
+            'This case considers the presence of + thus taking granted the number to be in E164 format
+            ElseIf Len(myCellVal) <> 13 Then
+                myCopyVal = "Invalid-SaudiArabia-Length"
+            End If
+            Cells(rownumber, Selection.Column + 3).NumberFormat = "@"
+            Cells(rownumber, Selection.Column + 3).Value = myCopyVal
+        End If
+        
+        If myCopyVal Like "+*" Then
+            validCount = validCount + 1
+        ElseIf myCopyVal Like "Invalid*" Then
+            invalidCount = invalidCount + 1
+        End If
+    Next rownumber
+    
+    MsgBox "Total = " & Selection.Rows.Count & vbCrLf & "Valid = " & validCount & vbCrLf & "Invalid = " & invalidCount
+
+
+
+Case vbNo
+'Insert your "No" code here.
+End Select
+End Sub
+Sub PickIndiaNumbers()
+'
+' PickIndiaNumbers Macro
+'
+YesNo = MsgBox("This macro will verify the selected cells for India mobile numbers. The normalized numbers will be copied in the 3rd right column.. Do you want to continue?", vbYesNo + vbCritical, "Caution")
+Select Case YesNo
+Case vbYes 'Run Macro
+    'MsgBox "Rows = " & Selection.Rows.Count & vbCrLf & "Colums = " & Selection.Columns.Count
+    firstRow = Selection.Row
+    lastRow = Selection.Row + Selection.Rows.Count
+    For rownumber = firstRow To lastRow - 1
+        myCellVal = Trim(Cells(rownumber, Selection.Column))
+        myCellVal = Replace(myCellVal, " ", "")
+        
+        'Select between the below two lines to copy or not to copy unrecognised numbers
+        'myCopyVal = myCellVal
+        myCopyVal = ""
+        
+        'Checking the expected format of the number
+        If myCellVal Like "+91*" Then
+            myCellVal = Replace(myCellVal, "-", "")
+            'Below Ifs remove additional country codes
+            If myCellVal Like "+91+91*" Or myCellVal Like "+910091*" Or (myCellVal Like "+9191*" And Len(myCellVal) = 15) Then
+            myCellVal = Replace(myCellVal, "+910091", "+91+91")
+            myCellVal = Replace(myCellVal, "+9191", "+91+91")
+            myCellVal = Right(myCellVal, Len(myCellVal) - 3)
+            End If
+            
+            If myCellVal Like "+910*" Then
+                myCellVal = Replace(myCellVal, "+910", "+91")
+            End If
+            
+            If (Len(myCellVal) = 13) Then
+                If (myCellVal Like "+919*") Or (myCellVal Like "+918*") Or (myCellVal Like "+917*") Then
+                    myCopyVal = myCellVal
+                Else
+                    myCopyVal = "Invalid-India-Number"
+                End If
+            'This case considers the presence of + thus taking granted the number to be in E164 format
+            ElseIf Len(myCellVal) <> 13 Then
+                myCopyVal = "Invalid-India-Length"
+            End If
+            Cells(rownumber, Selection.Column + 3).NumberFormat = "@"
+            Cells(rownumber, Selection.Column + 3).Value = myCopyVal
+        End If
+        If myCopyVal Like "+*" Then
+            validCount = validCount + 1
+        ElseIf myCopyVal Like "Invalid*" Then
+            invalidCount = invalidCount + 1
+        End If
+    Next rownumber
+    
+    MsgBox "Total = " & Selection.Rows.Count & vbCrLf & "Valid = " & validCount & vbCrLf & "Invalid = " & invalidCount
+
+Case vbNo
+'Insert your "No" code here.
+End Select
+End Sub
+Sub PickLebanonNumbers()
+'
+' PickLebanonNumbers Macro
+' +961 3234567, +961 70345678
+
+YesNo = MsgBox("This macro will verify the selected cells for Lebanon mobile numbers. The normalized numbers will be copied in the 3rd right column.. Do you want to continue?", vbYesNo + vbCritical, "Caution")
+Select Case YesNo
+Case vbYes 'Run Macro
+    'MsgBox "Rows = " & Selection.Rows.Count & vbCrLf & "Colums = " & Selection.Columns.Count
+    firstRow = Selection.Row
+    lastRow = Selection.Row + Selection.Rows.Count
+    For rownumber = firstRow To lastRow - 1
+        myCellVal = Trim(Cells(rownumber, Selection.Column))
+        myCellVal = Replace(myCellVal, " ", "")
+        
+        'Select between the below two lines to copy or not to copy unrecognised numbers
+        'myCopyVal = myCellVal
+        myCopyVal = ""
+        
+        'Checking the expected format of the number
+        If myCellVal Like "+961*" Then
+            myCellVal = Replace(myCellVal, "-", "")
+            'Below Ifs remove additional country codes
+            If myCellVal Like "+961+961*" Or myCellVal Like "+96100961*" Or (myCellVal Like "+961961*" And Len(myCellVal) > 13) Then
+            myCellVal = Replace(myCellVal, "+96100961", "+961+961")
+            myCellVal = Replace(myCellVal, "+961961", "+961+961")
+            myCellVal = Right(myCellVal, Len(myCellVal) - 4)
+            End If
+            
+            If myCellVal Like "+9610*" Then
+                myCellVal = Replace(myCellVal, "+9610", "+961")
+            End If
+            
+            If (Len(myCellVal) = 11) And (myCellVal Like "+9613*") Then
+                myCopyVal = myCellVal
+            ElseIf (Len(myCellVal) = 12) Then
+                If (myCellVal Like "+96170*") Or (myCellVal Like "+96171*") Or (myCellVal Like "+96176*") _
+                   Or (myCellVal Like "+961788*") Or (myCellVal Like "+961789*") Or (myCellVal Like "+961791*") Then
+                    myCopyVal = myCellVal
+                Else
+                    myCopyVal = "Invalid-Lebanon-Number"
+                End If
+            'This case considers the presence of + thus taking granted the number to be in E164 format
+            Else
+                myCopyVal = "Invalid-Lebanon-Length"
+            End If
+            Cells(rownumber, Selection.Column + 3).NumberFormat = "@"
+            Cells(rownumber, Selection.Column + 3).Value = myCopyVal
+        End If
+    
+        If myCopyVal Like "+*" Then
+            validCount = validCount + 1
+        ElseIf myCopyVal Like "Invalid*" Then
+            invalidCount = invalidCount + 1
+        End If
+    Next rownumber
+    
+    MsgBox "Total = " & Selection.Rows.Count & vbCrLf & "Valid = " & validCount & vbCrLf & "Invalid = " & invalidCount
+
+
+
+Case vbNo
+'Insert your "No" code here.
+End Select
+
+End Sub
+Sub PickEgyptNumbers()
+'
+' PickEgyptNumbers Macro
+' +201224567890
+' Old number portability is to be implemented with below mapping
+'Old range        New range         Service
+'---------        ---------         -------
+'+20 10 xxxxxxx   +20 100 xxxxxxx   Vodafone
+'+20 11 xxxxxxx   +20 111 xxxxxxx   Etisalat
+'+20 12 xxxxxxx   +20 122 xxxxxxx   Mobinil
+'+20 14 xxxxxxx   +20 114 xxxxxxx   Etisalat
+'+20 150 xxxxxxx  +20 120 xxxxxxx   Mobinil
+'+20 151 xxxxxxx  +20 101 xxxxxxx   Vodafone
+'+20 152 xxxxxxx  +20 112 xxxxxxx   Etisalat
+'+20 16 xxxxxxx   +20 106 xxxxxxx   Vodafone
+'+20 17 xxxxxxx   +20 127 xxxxxxx   Mobinil
+'+20 18 xxxxxxx   +20 128 xxxxxxx   Mobinil
+'+20 19 xxxxxxx   +20 109 xxxxxxx   Vodafone
+
+YesNo = MsgBox("This macro will verify the selected cells for Egypt mobile numbers. The normalized numbers will be copied in the 3rd right column.. Do you want to continue?", vbYesNo + vbCritical, "Caution")
+Select Case YesNo
+Case vbYes 'Run Macro
+    'MsgBox "Rows = " & Selection.Rows.Count & vbCrLf & "Colums = " & Selection.Columns.Count
+    firstRow = Selection.Row
+    lastRow = Selection.Row + Selection.Rows.Count
+    For rownumber = firstRow To lastRow - 1
+        myCellVal = Trim(Cells(rownumber, Selection.Column))
+        myCellVal = Replace(myCellVal, " ", "")
+        
+        'Select between the below two lines to copy or not to copy unrecognised numbers
+        'myCopyVal = myCellVal
+        myCopyVal = ""
+        
+        'Checking the expected format of the number
+        If myCellVal Like "+20*" Then
+            myCellVal = Replace(myCellVal, "-", "")
+            'Below Ifs remove additional country codes
+            If myCellVal Like "+20+20*" Or myCellVal Like "+200020*" Or (myCellVal Like "+2020*" And Len(myCellVal) = 15) Then
+            myCellVal = Replace(myCellVal, "+200020", "+20+20")
+            myCellVal = Replace(myCellVal, "+2020", "+20+20")
+            myCellVal = Right(myCellVal, Len(myCellVal) - 3)
+            End If
+            
+            If myCellVal Like "+200*" Then
+                myCellVal = Replace(myCellVal, "+200", "+20")
+            End If
+            
+            If (Len(myCellVal) = 13) Then
+                If (myCellVal Like "+2010*") Or (myCellVal Like "+2011*") Or (myCellVal Like "+2012*") Then
+                    myCopyVal = myCellVal
+                Else
+                    myCopyVal = "Invalid-Egypt-Number"
+                End If
+            'This case considers the presence of + thus taking granted the number to be in E164 format
+            ElseIf Len(myCellVal) <> 13 Then
+                myCopyVal = "Invalid-Egypt-Length"
+            End If
+            Cells(rownumber, Selection.Column + 3).NumberFormat = "@"
+            Cells(rownumber, Selection.Column + 3).Value = myCopyVal
+        End If
+
+        If myCopyVal Like "+*" Then
+            validCount = validCount + 1
+        ElseIf myCopyVal Like "Invalid*" Then
+            invalidCount = invalidCount + 1
+        End If
+    Next rownumber
+    
+    MsgBox "Total = " & Selection.Rows.Count & vbCrLf & "Valid = " & validCount & vbCrLf & "Invalid = " & invalidCount
+
+
+
+Case vbNo
+'Insert your "No" code here.
+End Select
+End Sub
+Sub PickQatarNumbers()
+'
+' PickQatarNumbers Macro
+' +974 33 123456, old +974 3 123456
+
+YesNo = MsgBox("This macro will verify the selected cells for Qatar mobile numbers. The normalized numbers will be copied in the 3rd right column.. Do you want to continue?", vbYesNo + vbCritical, "Caution")
+Select Case YesNo
+Case vbYes 'Run Macro
+    'MsgBox "Rows = " & Selection.Rows.Count & vbCrLf & "Colums = " & Selection.Columns.Count
+    firstRow = Selection.Row
+    lastRow = Selection.Row + Selection.Rows.Count
+    For rownumber = firstRow To lastRow - 1
+        myCellVal = Trim(Cells(rownumber, Selection.Column))
+        myCellVal = Replace(myCellVal, " ", "")
+        
+        'Select between the below two lines to copy or not to copy unrecognised numbers
+        'myCopyVal = myCellVal
+        myCopyVal = ""
+        
+        'Checking the expected format of the number
+        If myCellVal Like "+974*" Then
+            myCellVal = Replace(myCellVal, "-", "")
+            'Below Ifs remove additional country codes
+            If myCellVal Like "+974+974*" Or myCellVal Like "+97400974*" Or (myCellVal Like "+974974*" And Len(myCellVal) > 13) Then
+            myCellVal = Replace(myCellVal, "+97400974", "+974+974")
+            myCellVal = Replace(myCellVal, "+974974", "+974+974")
+            myCellVal = Right(myCellVal, Len(myCellVal) - 4)
+            End If
+            
+            If myCellVal Like "+9740*" Then
+                myCellVal = Replace(myCellVal, "+9740", "+974")
+            End If
+            
+            If (Len(myCellVal) = 11) Then
+                myCellVal = "+974" & Left(Right(myCellVal, 7), 1) & Right(myCellVal, 7)
+            End If
+            If (Len(myCellVal) = 12) Then
+                If (myCellVal Like "+9743*") Or (myCellVal Like "+9744*") Or (myCellVal Like "+9745*") Or (myCellVal Like "+9746*") _
+                   Or (myCellVal Like "+9747*") Then
+                    myCopyVal = myCellVal
+                Else
+                    myCopyVal = "Invalid-Qatar-Number"
+                End If
+            'This case considers the presence of + thus taking granted the number to be in E164 format
+            ElseIf Len(myCellVal) <> 12 Then
+                myCopyVal = "Invalid-Qatar-Length"
+            End If
+            Cells(rownumber, Selection.Column + 3).NumberFormat = "@"
+            Cells(rownumber, Selection.Column + 3).Value = myCopyVal
+        End If
+
+        If myCopyVal Like "+*" Then
+            validCount = validCount + 1
+        ElseIf myCopyVal Like "Invalid*" Then
+            invalidCount = invalidCount + 1
+        End If
+    Next rownumber
+    
+    MsgBox "Total = " & Selection.Rows.Count & vbCrLf & "Valid = " & validCount & vbCrLf & "Invalid = " & invalidCount
+
+
+
+Case vbNo
+'Insert your "No" code here.
+End Select
+
+'
+End Sub
+
+Sub PickBahrainNumbers()
+'
+' PickBahrainNumbers Macro
+' +973 32345678
+
+YesNo = MsgBox("This macro will verify the selected cells for Bahrain mobile numbers. The normalized numbers will be copied in the 3rd right column.. Do you want to continue?", vbYesNo + vbCritical, "Caution")
+Select Case YesNo
+Case vbYes 'Run Macro
+    'MsgBox "Rows = " & Selection.Rows.Count & vbCrLf & "Colums = " & Selection.Columns.Count
+    firstRow = Selection.Row
+    lastRow = Selection.Row + Selection.Rows.Count
+    For rownumber = firstRow To lastRow - 1
+        myCellVal = Trim(Cells(rownumber, Selection.Column))
+        myCellVal = Replace(myCellVal, " ", "")
+        
+        'Select between the below two lines to copy or not to copy unrecognised numbers
+        'myCopyVal = myCellVal
+        myCopyVal = ""
+        
+        'Checking the expected format of the number
+        If myCellVal Like "+973*" Then
+            myCellVal = Replace(myCellVal, "-", "")
+            'Below Ifs remove additional country codes
+            If myCellVal Like "+973+973*" Or myCellVal Like "+97300973*" Or (myCellVal Like "+973973*" And Len(myCellVal) > 13) Then
+            myCellVal = Replace(myCellVal, "+97300973", "+973+973")
+            myCellVal = Replace(myCellVal, "+973973", "+973+973")
+            myCellVal = Right(myCellVal, Len(myCellVal) - 4)
+            End If
+            
+            If myCellVal Like "+9730*" Then
+                myCellVal = Replace(myCellVal, "+9730", "+973")
+            End If
+            
+            If (Len(myCellVal) = 12) Then
+                If (myCellVal Like "+9733*") Then
+                    myCopyVal = myCellVal
+                Else
+                    myCopyVal = "Invalid-Bahrain-Number"
+                End If
+            'This case considers the presence of + thus taking granted the number to be in E164 format
+            ElseIf Len(myCellVal) <> 12 Then
+                myCopyVal = "Invalid-Bahrain-Length"
+            End If
+            Cells(rownumber, Selection.Column + 3).NumberFormat = "@"
+            Cells(rownumber, Selection.Column + 3).Value = myCopyVal
+        End If
+
+        If myCopyVal Like "+*" Then
+            validCount = validCount + 1
+        ElseIf myCopyVal Like "Invalid*" Then
+            invalidCount = invalidCount + 1
+        End If
+    Next rownumber
+    
+    MsgBox "Total = " & Selection.Rows.Count & vbCrLf & "Valid = " & validCount & vbCrLf & "Invalid = " & invalidCount
+
+
+
+Case vbNo
+'Insert your "No" code here.
+End Select
+
+'
+End Sub
+
+Sub PickOmanNumbers()
+'
+' PickOmanNumbers Macro
+' +968 99 123456, old +968 9 123456
+
+YesNo = MsgBox("This macro will verify the selected cells for Oman mobile numbers. The normalized numbers will be copied in the 3rd right column.. Do you want to continue?", vbYesNo + vbCritical, "Caution")
+Select Case YesNo
+Case vbYes 'Run Macro
+    'MsgBox "Rows = " & Selection.Rows.Count & vbCrLf & "Colums = " & Selection.Columns.Count
+    firstRow = Selection.Row
+    lastRow = Selection.Row + Selection.Rows.Count
+    For rownumber = firstRow To lastRow - 1
+        myCellVal = Trim(Cells(rownumber, Selection.Column))
+        myCellVal = Replace(myCellVal, " ", "")
+        
+        'Select between the below two lines to copy or not to copy unrecognised numbers
+        'myCopyVal = myCellVal
+        myCopyVal = ""
+        
+        'Checking the expected format of the number
+        If myCellVal Like "+968*" Then
+            myCellVal = Replace(myCellVal, "-", "")
+            'Below Ifs remove additional country codes
+            If myCellVal Like "+968+968*" Or myCellVal Like "+96800968*" Or (myCellVal Like "+968968*" And Len(myCellVal) > 13) Then
+            myCellVal = Replace(myCellVal, "+96800968", "+968+968")
+            myCellVal = Replace(myCellVal, "+968968", "+968+968")
+            myCellVal = Right(myCellVal, Len(myCellVal) - 4)
+            End If
+            
+            If myCellVal Like "+9680*" Then
+                myCellVal = Replace(myCellVal, "+9680", "+968")
+            End If
+            
+            If (Len(myCellVal) = 11) Then
+                myCellVal = "+9689" & Right(myCellVal, 7)
+            End If
+            If (Len(myCellVal) = 12) Then
+                If (myCellVal Like "+9689*") Then
+                    myCopyVal = myCellVal
+                Else
+                    myCopyVal = "Invalid-Oman-Number"
+                End If
+            'This case considers the presence of + thus taking granted the number to be in E164 format
+            ElseIf Len(myCellVal) <> 12 Then
+                myCopyVal = "Invalid-Oman-Length"
+            End If
+            Cells(rownumber, Selection.Column + 3).NumberFormat = "@"
+            Cells(rownumber, Selection.Column + 3).Value = myCopyVal
+        End If
+            
+        If myCopyVal Like "+*" Then
+            validCount = validCount + 1
+        ElseIf myCopyVal Like "Invalid*" Then
+            invalidCount = invalidCount + 1
+        End If
+    Next rownumber
+    
+    MsgBox "Total = " & Selection.Rows.Count & vbCrLf & "Valid = " & validCount & vbCrLf & "Invalid = " & invalidCount
+
+
+
+Case vbNo
+'Insert your "No" code here.
+End Select
+
+'
+End Sub
+
+Sub PickPakistanNumbers()
+'
+' PickPakistanNumbers Macro
+' +92 31 12345678
+
+YesNo = MsgBox("This macro will verify the selected cells for Pakistan mobile numbers. The normalized numbers will be copied in the 3rd right column.. Do you want to continue?", vbYesNo + vbCritical, "Caution")
+Select Case YesNo
+Case vbYes 'Run Macro
+    'MsgBox "Rows = " & Selection.Rows.Count & vbCrLf & "Colums = " & Selection.Columns.Count
+    firstRow = Selection.Row
+    lastRow = Selection.Row + Selection.Rows.Count
+    For rownumber = firstRow To lastRow - 1
+        myCellVal = Trim(Cells(rownumber, Selection.Column))
+        myCellVal = Replace(myCellVal, " ", "")
+        
+        'Select between the below two lines to copy or not to copy unrecognised numbers
+        'myCopyVal = myCellVal
+        myCopyVal = ""
+        
+        'Checking the expected format of the number
+        If myCellVal Like "+92*" Then
+            myCellVal = Replace(myCellVal, "-", "")
+            'Below Ifs remove additional country codes
+            If myCellVal Like "+92+92*" Or myCellVal Like "+920092*" Or (myCellVal Like "+9292*" And Len(myCellVal) = 15) Then
+            myCellVal = Replace(myCellVal, "+920092", "+92+92")
+            myCellVal = Replace(myCellVal, "+9292", "+92+92")
+            myCellVal = Right(myCellVal, Len(myCellVal) - 3)
+            End If
+            
+            If myCellVal Like "+920*" Then
+                myCellVal = Replace(myCellVal, "+920", "+92")
+            End If
+            
+            If (Len(myCellVal) = 13) Then
+                If (myCellVal Like "+923*") And Not ((myCellVal Like "+9237*") Or (myCellVal Like "+9238*") Or (myCellVal Like "+9239*")) Then
+                    myCopyVal = myCellVal
+                Else
+                    myCopyVal = "Invalid-Pakistan-Number"
+                End If
+            'This case considers the presence of + thus taking granted the number to be in E164 format
+            ElseIf Len(myCellVal) <> 13 Then
+                myCopyVal = "Invalid-Pakistan-Length"
+            End If
+            Cells(rownumber, Selection.Column + 3).NumberFormat = "@"
+            Cells(rownumber, Selection.Column + 3).Value = myCopyVal
+        End If
+
+        If myCopyVal Like "+*" Then
+            validCount = validCount + 1
+        ElseIf myCopyVal Like "Invalid*" Then
+            invalidCount = invalidCount + 1
+        End If
+    Next rownumber
+    
+    MsgBox "Total = " & Selection.Rows.Count & vbCrLf & "Valid = " & validCount & vbCrLf & "Invalid = " & invalidCount
+
+
+
+Case vbNo
+'Insert your "No" code here.
+End Select
+
+'
+End Sub
+
+Sub PickYemenNumbers()
+'
+' PickYemenNumbers Macro
+' +967 71 1234567
+
+YesNo = MsgBox("This macro will verify the selected cells for Yemen mobile numbers. The normalized numbers will be copied in the 3rd right column.. Do you want to continue?", vbYesNo + vbCritical, "Caution")
+Select Case YesNo
+Case vbYes 'Run Macro
+    'MsgBox "Rows = " & Selection.Rows.Count & vbCrLf & "Colums = " & Selection.Columns.Count
+    firstRow = Selection.Row
+    lastRow = Selection.Row + Selection.Rows.Count
+    For rownumber = firstRow To lastRow - 1
+        myCellVal = Trim(Cells(rownumber, Selection.Column))
+        myCellVal = Replace(myCellVal, " ", "")
+        
+        'Select between the below two lines to copy or not to copy unrecognised numbers
+        'myCopyVal = myCellVal
+        myCopyVal = ""
+        
+        'Checking the expected format of the number
+        If myCellVal Like "+967*" Then
+            myCellVal = Replace(myCellVal, "-", "")
+            'Below Ifs remove additional country codes
+            If myCellVal Like "+967+967*" Or myCellVal Like "+96700967*" Or (myCellVal Like "+967967*" And Len(myCellVal) = 16) Then
+            myCellVal = Replace(myCellVal, "+96700967", "+967+967")
+            myCellVal = Replace(myCellVal, "+967967", "+967+967")
+            myCellVal = Right(myCellVal, Len(myCellVal) - 4)
+            End If
+            
+            If myCellVal Like "+96707*" Then
+                myCellVal = Replace(myCellVal, "+96707", "+9677")
+            End If
+            
+            If (Len(myCellVal) = 13) Then
+                If (myCellVal Like "+96771*") Or (myCellVal Like "+96773*") Or (myCellVal Like "+96777*") Then
+                    myCopyVal = myCellVal
+                Else
+                    myCopyVal = "Invalid-Yemen-Number"
+                End If
+            'This case considers the presence of + thus taking granted the number to be in E164 format
+            ElseIf Len(myCellVal) <> 13 Then
+                myCopyVal = "Invalid-Yemen-Length"
+            End If
+            Cells(rownumber, Selection.Column + 3).NumberFormat = "@"
+            Cells(rownumber, Selection.Column + 3).Value = myCopyVal
+        End If
+
+        If myCopyVal Like "+*" Then
+            validCount = validCount + 1
+        ElseIf myCopyVal Like "Invalid*" Then
+            invalidCount = invalidCount + 1
+        End If
+    Next rownumber
+    
+    MsgBox "Total = " & Selection.Rows.Count & vbCrLf & "Valid = " & validCount & vbCrLf & "Invalid = " & invalidCount
+
+
+
+Case vbNo
+'Insert your "No" code here.
+End Select
+End Sub
